@@ -215,6 +215,20 @@ function initAll() {
       // startMaoPao();
       animate();
       shineCard();
+
+      // 如果有参与者数据，隐藏配置页面进入抽奖
+      console.log("Check users length:", basicData.users.length);
+      if (basicData.users.length > 0) {
+        console.log("Attempting to hide config page...");
+        hideConfigPage();
+        let cp = document.getElementById("configPage");
+        if (cp) {
+          cp.classList.add("hidden");
+          console.log("Forced .hidden class on configPage", cp);
+        } else {
+          console.error("Could not find configPage element!");
+        }
+      }
     }
   });
 }
@@ -225,7 +239,9 @@ function initCards() {
     length = member.length;
 
   let isBold = false,
-    showTable = basicData.leftUsers.length === basicData.users.length,
+    // showTable = basicData.leftUsers.length === basicData.users.length,
+    // 改为：如果没有中奖记录，就显示 Grid (Table) 视图
+    showTable = Object.keys(basicData.luckyUsers).length === 0,
     index = 0,
     totalMember = member.length,
     position = {

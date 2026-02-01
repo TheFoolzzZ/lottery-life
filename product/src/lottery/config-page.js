@@ -742,11 +742,11 @@ function startLottery() {
 
     // 保存配置到服务器
     saveConfigToServer(function () {
-        // 隐藏配置页面
-        safeClassListAdd(elements.configPage, "hidden");
-        // 触发抽奖页面刷新
-        if (window.onConfigComplete) {
-            window.onConfigComplete(configState);
+        // 重新加载页面以重置所有状态
+        try {
+            return location.reload();
+        } catch (e) {
+            console.error("Reload failed", e);
         }
     });
 }
