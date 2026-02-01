@@ -50,7 +50,7 @@ app.get("/", (req, res) => {
 });
 
 //设置跨域访问
-app.all("*", function(req, res, next) {
+app.all("*", function (req, res, next) {
   res.header("Access-Control-Allow-Origin", "*");
   res.header("Access-Control-Allow-Headers", "X-Requested-With");
   res.header("Access-Control-Allow-Methods", "PUT,POST,GET,DELETE,OPTIONS");
@@ -62,6 +62,80 @@ app.all("*", function(req, res, next) {
 app.post("*", (req, res, next) => {
   log(`请求内容：${JSON.stringify(req.path, 2)}`);
   next();
+});
+
+// 配置数据存储
+let configData = {
+  users: [],
+  prizes: [],
+  EACH_COUNT: [1],
+  musicFileName: ""
+};
+
+// 保存配置
+router.post("/saveConfig", (req, res, next) => {
+  const data = req.body;
+
+  if (data.users) {
+    configData.users = data.users;
+    curData.users = data.users;
+    // 重新洗牌
+    shuffle(curData.users);
+    curData.leftUsers = Object.assign([], curData.users);
+  }
+
+  if (data.prizes) {
+    configData.prizes = data.prizes;
+    cfg.prizes = data.prizes;
+  }
+
+  if (data.EACH_COUNT) {
+    configData.EACH_COUNT = data.EACH_COUNT;
+    cfg.EACH_COUNT = data.EACH_COUNT;
+  }
+
+  if (data.musicFileName) {
+    configData.musicFileName = data.musicFileName;
+  }
+
+  // 重置抽奖数据
+  luckyData = {};
+  errorData = [];
+
+  log(`保存配置成功: ${curData.users.length}名参与者, ${cfg.prizes.length}个奖项`);
+
+  res.json({
+    type: "success"
+  });
+});
+
+// 获取配置
+router.post("/getConfig", (req, res, next) => {
+  // 转换现有数据格式为配置页面格式
+  const participants = curData.users.map((user, index) => ({
+    id: index + 1,
+    name: user[1] || "",
+    note: user[2] || "-"
+  }));
+
+  const prizes = cfg.prizes
+    .filter(p => p.type !== 0) // 过滤掉特别奖占位符
+    .map((p, index) => ({
+      id: index + 1,
+      type: p.type,
+      text: p.text,
+      count: p.count,
+      title: p.title,
+      img: p.img
+    }));
+
+  res.json({
+    participants: participants,
+    prizes: prizes,
+    musicFileName: configData.musicFileName
+  });
+
+  log(`返回配置数据`);
 });
 
 // 获取之前设置的数据
@@ -247,7 +321,7 @@ function getLeftUsers() {
 loadData();
 
 module.exports = {
-  run: function(devPort, noOpen) {
+  run: function (devPort, noOpen) {
     let openBrowser = true;
     if (process.argv.length > 3) {
       if (process.argv[3] && (process.argv[3] + "").toLowerCase() === "n") {

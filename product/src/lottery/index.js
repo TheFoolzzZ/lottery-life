@@ -9,6 +9,7 @@ import {
   resetPrize
 } from "./prizeList";
 import { NUMBER_MATRIX } from "./config.js";
+import { initConfigPage, showConfigPage, hideConfigPage } from "./config-page.js";
 
 const ROTATE_TIME = 3000;
 const ROTATE_LOOP = 1000;
@@ -57,7 +58,22 @@ let selectedCardIndex = [],
   isLotting = false,
   currentLuckys = [];
 
-initAll();
+// 初始化配置页面
+initConfigPage();
+
+// 配置完成后的回调
+window.onConfigComplete = function (configData) {
+  // 刷新抽奖数据
+  initAll();
+};
+
+// 返回配置按钮
+var backToConfigBtn = document.querySelector("#backToConfig");
+if (backToConfigBtn) {
+  backToConfigBtn.addEventListener("click", function () {
+    showConfigPage();
+  });
+}
 
 /**
  * 初始化所有DOM
@@ -85,7 +101,7 @@ function initAll() {
         if (
           data.luckyData[prizeIndex] &&
           data.luckyData[prizeIndex].length >=
-            basicData.prizes[prizeIndex].count
+          basicData.prizes[prizeIndex].count
         ) {
           continue;
         }
@@ -707,9 +723,8 @@ function random(num) {
 function changeCard(cardIndex, user) {
   let card = threeDCards[cardIndex].element;
 
-  card.innerHTML = `<div class="company">${COMPANY}</div><div class="name">${
-    user[1]
-  }</div><div class="details">${user[0] || ""}<br/>${user[2] || "PSST"}</div>`;
+  card.innerHTML = `<div class="company">${COMPANY}</div><div class="name">${user[1]
+    }</div><div class="details">${user[0] || ""}<br/>${user[2] || "PSST"}</div>`;
 }
 
 /**
@@ -810,7 +825,7 @@ function createHighlight() {
   const startX = 1; // 起始X坐标
   const startY = 1; // 起始Y坐标
   const spacing = 4; // 调整字母之间的间距，使其有合适的间隔
-  
+
   HOBO.forEach((letterIndex, i) => {
     NUMBER_MATRIX[letterIndex].forEach(([x, y]) => {
       // 计算每个点的实际位置
@@ -819,7 +834,7 @@ function createHighlight() {
       highlight.push(`${actualX}-${actualY}`);
     });
   });
-  
+
   return highlight;
 }
 

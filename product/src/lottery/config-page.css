@@ -1,0 +1,556 @@
+/* 配置页面样式 - 赛博朋克风格 */
+
+/* 配置页面容器 */
+#configPage {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(to bottom, #131313 0%, #02101c 100%);
+  z-index: 100;
+  overflow-y: auto;
+  padding: 2vh 4vh;
+  box-sizing: border-box;
+}
+
+#configPage.hidden {
+  display: none;
+}
+
+/* 配置页面标题 */
+.config-header {
+  text-align: center;
+  margin-bottom: 3vh;
+}
+
+.config-title {
+  font-size: 4vh;
+  font-weight: bold;
+  color: #fff;
+  text-shadow: 0 0 10px rgba(0, 255, 255, 0.8), 0 0 20px rgba(0, 255, 255, 0.5);
+  margin: 0;
+  padding: 2vh 0;
+}
+
+.config-subtitle {
+  font-size: 1.8vh;
+  color: rgba(127, 255, 255, 0.75);
+}
+
+/* 配置区域通用样式 */
+.config-section {
+  background-color: rgba(0, 127, 127, 0.15);
+  border: 1px solid rgba(127, 255, 255, 0.25);
+  border-radius: 8px;
+  padding: 2vh;
+  margin-bottom: 3vh;
+  box-shadow: 0 0 15px rgba(0, 255, 255, 0.1);
+}
+
+.config-section-title {
+  font-size: 2.4vh;
+  font-weight: bold;
+  color: rgba(127, 255, 255, 0.9);
+  margin: 0 0 2vh 0;
+  padding-bottom: 1vh;
+  border-bottom: 1px solid rgba(127, 255, 255, 0.25);
+  display: flex;
+  align-items: center;
+  gap: 1vh;
+}
+
+.config-section-title .icon {
+  font-size: 2.4vh;
+}
+
+/* 两栏布局 */
+.config-layout {
+  display: flex;
+  gap: 3vh;
+}
+
+.config-column {
+  flex: 1;
+  min-width: 0;
+}
+
+/* 输入表单样式 */
+.config-form {
+  display: flex;
+  gap: 1.5vh;
+  margin-bottom: 2vh;
+  flex-wrap: wrap;
+}
+
+.config-input {
+  flex: 1;
+  min-width: 150px;
+  padding: 1.2vh 1.5vh;
+  font-size: 1.6vh;
+  color: #fff;
+  background-color: rgba(0, 0, 0, 0.4);
+  border: 1px solid rgba(127, 255, 255, 0.35);
+  border-radius: 4px;
+  outline: none;
+  transition: all 0.3s ease;
+}
+
+.config-input:focus {
+  border-color: rgba(0, 255, 255, 0.8);
+  box-shadow: 0 0 10px rgba(0, 255, 255, 0.3);
+}
+
+.config-input::placeholder {
+  color: rgba(127, 255, 255, 0.4);
+}
+
+.config-textarea {
+  width: 100%;
+  min-height: 12vh;
+  padding: 1.2vh 1.5vh;
+  font-size: 1.6vh;
+  color: #fff;
+  background-color: rgba(0, 0, 0, 0.4);
+  border: 1px solid rgba(127, 255, 255, 0.35);
+  border-radius: 4px;
+  outline: none;
+  resize: vertical;
+  font-family: inherit;
+  transition: all 0.3s ease;
+}
+
+.config-textarea:focus {
+  border-color: rgba(0, 255, 255, 0.8);
+  box-shadow: 0 0 10px rgba(0, 255, 255, 0.3);
+}
+
+.config-textarea::placeholder {
+  color: rgba(127, 255, 255, 0.4);
+}
+
+/* 按钮样式 */
+.config-btn {
+  padding: 1.2vh 2.5vh;
+  font-size: 1.6vh;
+  font-weight: bold;
+  color: rgba(127, 255, 255, 0.9);
+  background: transparent;
+  border: 1px solid rgba(127, 255, 255, 0.6);
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  white-space: nowrap;
+}
+
+.config-btn:hover {
+  background-color: rgba(0, 255, 255, 0.2);
+  box-shadow: 0 0 10px rgba(0, 255, 255, 0.4);
+}
+
+.config-btn:active {
+  background-color: rgba(0, 255, 255, 0.4);
+}
+
+.config-btn.primary {
+  background-color: rgba(253, 105, 0, 0.8);
+  border-color: rgba(253, 105, 0, 0.9);
+  color: #fff;
+}
+
+.config-btn.primary:hover {
+  background-color: rgba(253, 105, 0, 1);
+  box-shadow: 0 0 15px rgba(253, 105, 0, 0.5);
+}
+
+.config-btn.danger {
+  border-color: rgba(220, 53, 69, 0.6);
+  color: rgba(220, 53, 69, 0.9);
+}
+
+.config-btn.danger:hover {
+  background-color: rgba(220, 53, 69, 0.2);
+}
+
+.config-btn.small {
+  padding: 0.6vh 1.2vh;
+  font-size: 1.4vh;
+}
+
+/* 表格样式 */
+.config-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 1.6vh;
+}
+
+.config-table th,
+.config-table td {
+  padding: 1.2vh 1.5vh;
+  text-align: left;
+  border-bottom: 1px solid rgba(127, 255, 255, 0.15);
+  color: rgba(255, 255, 255, 0.85);
+}
+
+.config-table th {
+  color: rgba(127, 255, 255, 0.9);
+  font-weight: bold;
+  background-color: rgba(0, 127, 127, 0.2);
+}
+
+.config-table tr:hover {
+  background-color: rgba(0, 255, 255, 0.05);
+}
+
+.config-table .actions {
+  white-space: nowrap;
+}
+
+.config-table .actions button {
+  margin-right: 0.8vh;
+}
+
+/* 列表容器 */
+.config-list-container {
+  max-height: 40vh;
+  overflow-y: auto;
+  margin-top: 1vh;
+}
+
+.config-list-container::-webkit-scrollbar {
+  width: 6px;
+}
+
+.config-list-container::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.3);
+  border-radius: 3px;
+}
+
+.config-list-container::-webkit-scrollbar-thumb {
+  background: rgba(127, 255, 255, 0.4);
+  border-radius: 3px;
+}
+
+/* 统计信息 */
+.config-stats {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1vh 0;
+  color: rgba(127, 255, 255, 0.75);
+  font-size: 1.6vh;
+}
+
+.config-stats .count {
+  color: rgba(253, 105, 0, 0.95);
+  font-weight: bold;
+  font-size: 2vh;
+}
+
+/* 奖项卡片 */
+.prize-cards {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5vh;
+}
+
+.prize-card {
+  display: flex;
+  align-items: center;
+  gap: 1.5vh;
+  padding: 1.5vh;
+  background-color: rgba(0, 127, 127, 0.2);
+  border: 1px solid rgba(127, 255, 255, 0.25);
+  border-radius: 6px;
+  cursor: grab;
+  transition: all 0.3s ease;
+}
+
+.prize-card:hover {
+  border-color: rgba(127, 255, 255, 0.5);
+  box-shadow: 0 0 10px rgba(0, 255, 255, 0.2);
+}
+
+.prize-card.dragging {
+  opacity: 0.5;
+  transform: scale(1.02);
+}
+
+.prize-card .drag-handle {
+  color: rgba(127, 255, 255, 0.5);
+  font-size: 2vh;
+  cursor: grab;
+}
+
+.prize-card .prize-img {
+  width: 6vh;
+  height: 6vh;
+  border-radius: 6px;
+  background-color: rgba(255, 255, 255, 0.1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.prize-card .prize-img img {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: cover;
+}
+
+.prize-card .prize-img .placeholder {
+  font-size: 3vh;
+}
+
+.prize-card .prize-info {
+  flex: 1;
+}
+
+.prize-card .prize-name {
+  font-size: 1.8vh;
+  font-weight: bold;
+  color: #fff;
+  margin-bottom: 0.5vh;
+}
+
+.prize-card .prize-desc {
+  font-size: 1.4vh;
+  color: rgba(127, 255, 255, 0.75);
+}
+
+.prize-card .prize-count {
+  font-size: 1.8vh;
+  color: rgba(253, 105, 0, 0.95);
+  font-weight: bold;
+  min-width: 8vh;
+  text-align: center;
+}
+
+.prize-card .prize-actions {
+  display: flex;
+  gap: 0.8vh;
+}
+
+/* 弹窗样式 */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.7);
+  z-index: 200;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.modal-overlay.hidden {
+  display: none;
+}
+
+.modal {
+  background: linear-gradient(to bottom, #1a1a2e 0%, #0f0f1a 100%);
+  border: 1px solid rgba(127, 255, 255, 0.4);
+  border-radius: 8px;
+  box-shadow: 0 0 30px rgba(0, 255, 255, 0.3);
+  min-width: 40vh;
+  max-width: 60vh;
+  max-height: 80vh;
+  overflow: hidden;
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1.5vh 2vh;
+  border-bottom: 1px solid rgba(127, 255, 255, 0.25);
+}
+
+.modal-title {
+  font-size: 2vh;
+  font-weight: bold;
+  color: rgba(127, 255, 255, 0.9);
+  margin: 0;
+}
+
+.modal-close {
+  background: none;
+  border: none;
+  color: rgba(127, 255, 255, 0.6);
+  font-size: 2.4vh;
+  cursor: pointer;
+  padding: 0;
+  line-height: 1;
+}
+
+.modal-close:hover {
+  color: rgba(127, 255, 255, 1);
+}
+
+.modal-body {
+  padding: 2vh;
+  max-height: 50vh;
+  overflow-y: auto;
+}
+
+.modal-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 1.5vh;
+  padding: 1.5vh 2vh;
+  border-top: 1px solid rgba(127, 255, 255, 0.25);
+}
+
+/* 表单组 */
+.form-group {
+  margin-bottom: 2vh;
+}
+
+.form-label {
+  display: block;
+  margin-bottom: 0.8vh;
+  font-size: 1.6vh;
+  color: rgba(127, 255, 255, 0.8);
+}
+
+.form-label .required {
+  color: rgba(253, 105, 0, 0.9);
+}
+
+/* 文件上传 */
+.file-upload {
+  position: relative;
+  display: inline-block;
+}
+
+.file-upload input[type="file"] {
+  position: absolute;
+  left: 0;
+  top: 0;
+  opacity: 0;
+  width: 100%;
+  height: 100%;
+  cursor: pointer;
+}
+
+/* 音乐列表 */
+.music-list {
+  margin-top: 1.5vh;
+}
+
+.music-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1vh 1.5vh;
+  background-color: rgba(0, 127, 127, 0.15);
+  border: 1px solid rgba(127, 255, 255, 0.2);
+  border-radius: 4px;
+  margin-bottom: 1vh;
+}
+
+.music-item .music-name {
+  color: rgba(255, 255, 255, 0.85);
+  font-size: 1.6vh;
+  display: flex;
+  align-items: center;
+  gap: 1vh;
+}
+
+.music-item .music-icon {
+  color: rgba(127, 255, 255, 0.7);
+}
+
+/* 提示信息 */
+.config-tip {
+  font-size: 1.4vh;
+  color: rgba(127, 255, 255, 0.5);
+  margin-top: 1vh;
+}
+
+.config-warning {
+  background-color: rgba(253, 105, 0, 0.15);
+  border: 1px solid rgba(253, 105, 0, 0.4);
+  border-radius: 4px;
+  padding: 1vh 1.5vh;
+  color: rgba(253, 105, 0, 0.9);
+  font-size: 1.4vh;
+  margin-top: 1vh;
+}
+
+/* 空状态 */
+.empty-state {
+  text-align: center;
+  padding: 4vh 2vh;
+  color: rgba(127, 255, 255, 0.4);
+  font-size: 1.6vh;
+}
+
+/* 保存按钮区域 */
+.config-footer {
+  display: flex;
+  justify-content: center;
+  padding: 2vh 0 4vh;
+}
+
+.config-footer .config-btn {
+  padding: 2vh 6vh;
+  font-size: 2.2vh;
+  animation: breath 1.6s linear infinite;
+  box-shadow: 0px 0px 15px rgba(253, 105, 0, 0.5);
+}
+
+@keyframes breath {
+  0% {
+    transform: scale(0.95);
+    opacity: 0.9;
+  }
+  50% {
+    transform: scale(1.05);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(0.95);
+    opacity: 0.9;
+  }
+}
+
+/* 标签页 */
+.config-tabs {
+  display: flex;
+  gap: 1vh;
+  margin-bottom: 2vh;
+}
+
+.config-tab {
+  padding: 1vh 2vh;
+  font-size: 1.6vh;
+  color: rgba(127, 255, 255, 0.6);
+  background: transparent;
+  border: 1px solid rgba(127, 255, 255, 0.25);
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.config-tab.active {
+  color: #fff;
+  background-color: rgba(0, 255, 255, 0.2);
+  border-color: rgba(0, 255, 255, 0.6);
+}
+
+.config-tab:hover {
+  border-color: rgba(0, 255, 255, 0.5);
+}
+
+/* 隐藏内容 */
+.tab-content {
+  display: none;
+}
+
+.tab-content.active {
+  display: block;
+}

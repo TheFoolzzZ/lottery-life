@@ -17,6 +17,230 @@
     <script src="./lib/CSS3DRenderer.js"></script>
     <script src="./lib/ajax.js"></script>
 
+    <!-- ========== 配置页面 ========== -->
+    <div id="configPage">
+      <div class="config-header">
+        <h1 class="config-title">⚡ 抽奖配置中心 ⚡</h1>
+        <p class="config-subtitle">配置参与者和奖项信息，完成后进入抽奖</p>
+      </div>
+
+      <div class="config-layout">
+        <!-- 左侧：参与者配置 -->
+        <div class="config-column">
+          <div class="config-section">
+            <h2 class="config-section-title">
+              <span class="icon">👥</span> 参与者配置
+            </h2>
+
+            <!-- 标签页 -->
+            <div class="config-tabs">
+              <button id="tabManual" class="config-tab active">手动添加</button>
+              <button id="tabPaste" class="config-tab">粘贴文本</button>
+            </div>
+
+            <!-- 手动添加 -->
+            <div id="contentManual" class="tab-content active">
+              <div class="config-form">
+                <input
+                  type="text"
+                  id="participantName"
+                  class="config-input"
+                  placeholder="姓名 *"
+                />
+                <input
+                  type="text"
+                  id="participantNote"
+                  class="config-input"
+                  placeholder="备注（选填）"
+                />
+                <button id="addParticipantBtn" class="config-btn primary">
+                  + 添加
+                </button>
+              </div>
+            </div>
+
+            <!-- 粘贴文本 -->
+            <div id="contentPaste" class="tab-content">
+              <textarea
+                id="pasteTextarea"
+                class="config-textarea"
+                placeholder="粘贴文本，支持格式：&#10;1. 张三&#10;2. 李四&#10;3、王五&#10;或直接换行分隔的姓名"
+              ></textarea>
+              <div style="margin-top: 1vh">
+                <button id="parseTextBtn" class="config-btn primary">
+                  解析并添加
+                </button>
+              </div>
+            </div>
+
+            <!-- 参与者列表 -->
+            <div class="config-stats">
+              <span>共 <span id="participantCount" class="count">0</span> 人</span>
+              <button id="clearAllParticipantsBtn" class="config-btn small danger">
+                🗑️ 清空全部
+              </button>
+            </div>
+
+            <div class="config-list-container">
+              <table class="config-table">
+                <thead>
+                  <tr>
+                    <th style="width: 50px">#</th>
+                    <th>姓名</th>
+                    <th>备注</th>
+                    <th style="width: 120px">操作</th>
+                  </tr>
+                </thead>
+                <tbody id="participantList">
+                  <tr>
+                    <td colspan="4" class="empty-state">暂无参与者，请添加</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- 右侧：奖项配置 -->
+        <div class="config-column">
+          <div class="config-section">
+            <h2 class="config-section-title">
+              <span class="icon">🏆</span> 奖项设置
+            </h2>
+
+            <div style="margin-bottom: 2vh">
+              <button id="addPrizeBtn" class="config-btn primary">
+                + 添加奖项
+              </button>
+            </div>
+
+            <div class="config-stats">
+              <span>
+                共 <span id="prizeCount" class="count">0</span> 个奖项，
+                中奖总人数 <span id="totalWinners" class="count">0</span> 人
+              </span>
+            </div>
+
+            <div id="validationWarning" class="config-warning" style="display: none"></div>
+
+            <div class="config-list-container">
+              <div id="prizeCards" class="prize-cards">
+                <div class="empty-state">暂无奖项，请添加</div>
+              </div>
+            </div>
+
+            <p class="config-tip">💡 拖拽奖项卡片可调整抽奖顺序</p>
+          </div>
+
+          <!-- 音乐配置 -->
+          <div class="config-section">
+            <h2 class="config-section-title">
+              <span class="icon">🎵</span> 背景音乐
+            </h2>
+
+            <div class="file-upload">
+              <button class="config-btn">📁 上传音乐</button>
+              <input type="file" id="musicUpload" accept="audio/*" />
+            </div>
+
+            <div id="musicList" class="music-list">
+              <div class="config-tip">未上传音乐，将使用系统默认音乐</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 保存并开始抽奖 -->
+      <div class="config-footer">
+        <button id="startLotteryBtn" class="config-btn primary">
+          🎰 保存配置并进入抽奖
+        </button>
+      </div>
+    </div>
+
+    <!-- ========== 奖项编辑弹窗 ========== -->
+    <div id="prizeModal" class="modal-overlay hidden">
+      <div class="modal">
+        <div class="modal-header">
+          <h3 id="prizeModalTitle" class="modal-title">添加奖项</h3>
+          <button id="closePrizeModal" class="modal-close">×</button>
+        </div>
+        <div class="modal-body">
+          <form id="prizeForm">
+            <div class="form-group">
+              <label class="form-label">
+                奖项名称 <span class="required">*</span>
+              </label>
+              <input
+                type="text"
+                name="prizeName"
+                class="config-input"
+                placeholder="如：特等奖、一等奖"
+                style="width: 100%; box-sizing: border-box"
+              />
+            </div>
+            <div class="form-group">
+              <label class="form-label">
+                中奖人数 <span class="required">*</span>
+              </label>
+              <input
+                type="number"
+                name="prizeWinnerCount"
+                class="config-input"
+                placeholder="1"
+                min="1"
+                value="1"
+                style="width: 100%; box-sizing: border-box"
+              />
+            </div>
+            <div class="form-group">
+              <label class="form-label">
+                奖项描述 <span class="required">*</span>
+              </label>
+              <input
+                type="text"
+                name="prizeDescription"
+                class="config-input"
+                placeholder="如：iPhone 16 Pro"
+                style="width: 100%; box-sizing: border-box"
+              />
+            </div>
+            <div class="form-group">
+              <label class="form-label">奖项配图地址</label>
+              <input
+                type="text"
+                name="prizeImage"
+                class="config-input"
+                placeholder="图片URL（选填，不填使用默认图标）"
+                style="width: 100%; box-sizing: border-box"
+              />
+            </div>
+          </form>
+        </div>
+        <div class="modal-footer">
+          <button id="cancelPrizeBtn" class="config-btn">取消</button>
+          <button id="savePrizeBtn" class="config-btn primary">保存</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ========== 确认弹窗 ========== -->
+    <div id="confirmModal" class="modal-overlay hidden">
+      <div class="modal" style="min-width: 30vh">
+        <div class="modal-header">
+          <h3 class="modal-title">确认操作</h3>
+        </div>
+        <div class="modal-body">
+          <p id="confirmMessage" style="color: #fff; font-size: 1.8vh; text-align: center; margin: 2vh 0"></p>
+        </div>
+        <div class="modal-footer">
+          <button id="confirmNoBtn" class="config-btn">取消</button>
+          <button id="confirmYesBtn" class="config-btn primary">确定</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ========== 抽奖页面 ========== -->
     <div class="canvas-box">
       <canvas id="canvas">你的浏览器不支持canvas</canvas>
     </div>
@@ -38,6 +262,7 @@
         <div class="fixed-bar">
           <button id="save" class="fixed-btn">导出抽奖结果</button>
           <button id="reset" class="fixed-btn">重置</button>
+          <button id="backToConfig" class="fixed-btn">返回配置</button>
         </div>
       </div>
     </div>
@@ -45,3 +270,4 @@
     <div class="qipao-container"></div>
   </body>
 </html>
+

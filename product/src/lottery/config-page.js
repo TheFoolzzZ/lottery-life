@@ -1,0 +1,760 @@
+import "./config-page.css";
+
+// 配置页面状态
+var configState = {
+    participants: [],
+    prizes: [],
+    musicFile: null,
+    musicFileName: ""
+};
+
+// DOM元素缓存
+var elements = {};
+
+// 初始化配置页面
+export function initConfigPage() {
+    cacheElements();
+    bindEvents();
+    loadExistingConfig();
+}
+
+// 缓存DOM元素
+function cacheElements() {
+    elements = {
+        configPage: document.getElementById("configPage"),
+        // 参与者相关
+        participantName: document.getElementById("participantName"),
+        participantNote: document.getElementById("participantNote"),
+        addParticipantBtn: document.getElementById("addParticipantBtn"),
+        pasteTextarea: document.getElementById("pasteTextarea"),
+        parseTextBtn: document.getElementById("parseTextBtn"),
+        participantList: document.getElementById("participantList"),
+        participantCount: document.getElementById("participantCount"),
+        clearAllParticipantsBtn: document.getElementById("clearAllParticipantsBtn"),
+        // 奖项相关
+        addPrizeBtn: document.getElementById("addPrizeBtn"),
+        prizeCards: document.getElementById("prizeCards"),
+        prizeCount: document.getElementById("prizeCount"),
+        totalWinners: document.getElementById("totalWinners"),
+        // 音乐相关
+        musicUpload: document.getElementById("musicUpload"),
+        musicList: document.getElementById("musicList"),
+        // 弹窗相关
+        prizeModal: document.getElementById("prizeModal"),
+        prizeForm: document.getElementById("prizeForm"),
+        prizeModalTitle: document.getElementById("prizeModalTitle"),
+        closePrizeModal: document.getElementById("closePrizeModal"),
+        cancelPrizeBtn: document.getElementById("cancelPrizeBtn"),
+        savePrizeBtn: document.getElementById("savePrizeBtn"),
+        // 确认弹窗
+        confirmModal: document.getElementById("confirmModal"),
+        confirmMessage: document.getElementById("confirmMessage"),
+        confirmYesBtn: document.getElementById("confirmYesBtn"),
+        confirmNoBtn: document.getElementById("confirmNoBtn"),
+        // 提交按钮
+        startLotteryBtn: document.getElementById("startLotteryBtn"),
+        // 标签页
+        tabManual: document.getElementById("tabManual"),
+        tabPaste: document.getElementById("tabPaste"),
+        contentManual: document.getElementById("contentManual"),
+        contentPaste: document.getElementById("contentPaste")
+    };
+}
+
+// 安全添加事件监听器
+function safeAddEventListener(element, event, handler) {
+    if (element) {
+        element.addEventListener(event, handler);
+    }
+}
+
+// 绑定事件
+function bindEvents() {
+    // 标签页切换
+    safeAddEventListener(elements.tabManual, "click", function () { switchTab("manual"); });
+    safeAddEventListener(elements.tabPaste, "click", function () { switchTab("paste"); });
+
+    // 参与者操作
+    safeAddEventListener(elements.addParticipantBtn, "click", addParticipant);
+    safeAddEventListener(elements.parseTextBtn, "click", parseText);
+    safeAddEventListener(elements.clearAllParticipantsBtn, "click", function () {
+        showConfirm("确定要清空所有参与者吗？此操作不可恢复。", function () {
+            configState.participants = [];
+            renderParticipants();
+        });
+    });
+
+    // 奖项操作
+    safeAddEventListener(elements.addPrizeBtn, "click", function () { openPrizeModal(); });
+    safeAddEventListener(elements.closePrizeModal, "click", closePrizeModal);
+    safeAddEventListener(elements.cancelPrizeBtn, "click", closePrizeModal);
+    safeAddEventListener(elements.savePrizeBtn, "click", savePrize);
+
+    // 确认弹窗
+    safeAddEventListener(elements.confirmNoBtn, "click", closeConfirm);
+
+    // 音乐上传
+    safeAddEventListener(elements.musicUpload, "change", handleMusicUpload);
+
+    // 开始抽奖
+    safeAddEventListener(elements.startLotteryBtn, "click", startLottery);
+
+    // 回车提交
+    safeAddEventListener(elements.participantName, "keypress", function (e) {
+        if (e.key === "Enter") addParticipant();
+    });
+}
+
+// 安全操作classList
+function safeClassListAdd(element, className) {
+    if (element) {
+        element.classList.add(className);
+    }
+}
+
+function safeClassListRemove(element, className) {
+    if (element) {
+        element.classList.remove(className);
+    }
+}
+
+// 标签页切换
+function switchTab(tab) {
+    if (tab === "manual") {
+        safeClassListAdd(elements.tabManual, "active");
+        safeClassListRemove(elements.tabPaste, "active");
+        safeClassListAdd(elements.contentManual, "active");
+        safeClassListRemove(elements.contentPaste, "active");
+    } else {
+        safeClassListRemove(elements.tabManual, "active");
+        safeClassListAdd(elements.tabPaste, "active");
+        safeClassListRemove(elements.contentManual, "active");
+        safeClassListAdd(elements.contentPaste, "active");
+    }
+}
+
+// 加载现有配置
+function loadExistingConfig() {
+    window.AJAX({
+        url: "/getConfig",
+        success: function (data) {
+            if (data.participants && data.participants.length > 0) {
+                configState.participants = data.participants;
+            }
+            if (data.prizes && data.prizes.length > 0) {
+                configState.prizes = data.prizes;
+            }
+            if (data.musicFileName) {
+                configState.musicFileName = data.musicFileName;
+            }
+            renderParticipants();
+            renderPrizes();
+            renderMusic();
+        },
+        error: function () {
+            // 使用默认配置
+            renderParticipants();
+            renderPrizes();
+            renderMusic();
+        }
+    });
+}
+
+// ============ 参与者管理 ============
+
+// 添加参与者
+function addParticipant() {
+    var name = elements.participantName ? elements.participantName.value.trim() : "";
+    var note = elements.participantNote ? (elements.participantNote.value.trim() || "-") : "-";
+
+    if (!name) {
+        alert("请输入参与者姓名");
+        return;
+    }
+
+    configState.participants.push({
+        id: Date.now(),
+        name: name,
+        note: note
+    });
+
+    if (elements.participantName) elements.participantName.value = "";
+    if (elements.participantNote) elements.participantNote.value = "";
+    if (elements.participantName) elements.participantName.focus();
+
+    renderParticipants();
+    checkDuplicateNames();
+}
+
+// 解析粘贴文本
+function parseText() {
+    var text = elements.pasteTextarea ? elements.pasteTextarea.value.trim() : "";
+    if (!text) {
+        alert("请先粘贴文本内容");
+        return;
+    }
+
+    // 支持多种格式: "1. 张三", "1、张三", "1.张三", "张三"
+    var lines = text.split(/\n/);
+    var addedCount = 0;
+
+    lines.forEach(function (line) {
+        line = line.trim();
+        if (!line) return;
+
+        // 尝试匹配序号格式
+        var match = line.match(/^\d+[\.、\)\]\s]+\s*(.+)/);
+        var name = match ? match[1].trim() : line;
+
+        if (name) {
+            configState.participants.push({
+                id: Date.now() + addedCount,
+                name: name,
+                note: "-"
+            });
+            addedCount++;
+        }
+    });
+
+    if (addedCount > 0) {
+        if (elements.pasteTextarea) elements.pasteTextarea.value = "";
+        renderParticipants();
+        checkDuplicateNames();
+        alert("成功添加 " + addedCount + " 名参与者");
+    } else {
+        alert("未能解析出任何参与者");
+    }
+}
+
+// 检查重名
+function checkDuplicateNames() {
+    var nameCount = {};
+    configState.participants.forEach(function (p) {
+        nameCount[p.name] = (nameCount[p.name] || 0) + 1;
+    });
+
+    var duplicates = [];
+    for (var name in nameCount) {
+        if (nameCount[name] > 1) {
+            duplicates.push(name);
+        }
+    }
+
+    if (duplicates.length > 0) {
+        console.log("发现重名参与者:", duplicates);
+    }
+}
+
+// 编辑参与者
+function editParticipant(id) {
+    var participant = null;
+    for (var i = 0; i < configState.participants.length; i++) {
+        if (configState.participants[i].id === id) {
+            participant = configState.participants[i];
+            break;
+        }
+    }
+    if (!participant) return;
+
+    var newName = prompt("修改姓名:", participant.name);
+    if (newName === null) return;
+    if (!newName.trim()) {
+        alert("姓名不能为空");
+        return;
+    }
+
+    var newNote = prompt("修改备注:", participant.note);
+
+    participant.name = newName.trim();
+    participant.note = (newNote && newNote.trim()) ? newNote.trim() : "-";
+
+    renderParticipants();
+}
+
+// 删除参与者
+function deleteParticipant(id) {
+    configState.participants = configState.participants.filter(function (p) { return p.id !== id; });
+    renderParticipants();
+}
+
+// 渲染参与者列表
+function renderParticipants() {
+    var count = configState.participants.length;
+    if (elements.participantCount) {
+        elements.participantCount.textContent = count;
+    }
+
+    if (!elements.participantList) return;
+
+    if (count === 0) {
+        elements.participantList.innerHTML = '<tr><td colspan="4" class="empty-state">暂无参与者，请添加</td></tr>';
+        return;
+    }
+
+    var html = "";
+    configState.participants.forEach(function (p, index) {
+        html += '<tr>' +
+            '<td>' + (index + 1) + '</td>' +
+            '<td>' + escapeHtml(p.name) + '</td>' +
+            '<td>' + escapeHtml(p.note) + '</td>' +
+            '<td class="actions">' +
+            '<button class="config-btn small" onclick="window.configPage.editParticipant(' + p.id + ')">编辑</button>' +
+            '<button class="config-btn small danger" onclick="window.configPage.deleteParticipant(' + p.id + ')">删除</button>' +
+            '</td>' +
+            '</tr>';
+    });
+    elements.participantList.innerHTML = html;
+
+    updateValidation();
+}
+
+// ============ 奖项管理 ============
+
+var editingPrizeId = null;
+
+// 打开奖项弹窗
+function openPrizeModal(prizeId) {
+    editingPrizeId = prizeId || null;
+
+    if (prizeId) {
+        var prize = null;
+        for (var i = 0; i < configState.prizes.length; i++) {
+            if (configState.prizes[i].id === prizeId) {
+                prize = configState.prizes[i];
+                break;
+            }
+        }
+        if (!prize) return;
+
+        if (elements.prizeModalTitle) {
+            elements.prizeModalTitle.textContent = "编辑奖项";
+        }
+        fillPrizeForm(prize);
+    } else {
+        if (elements.prizeModalTitle) {
+            elements.prizeModalTitle.textContent = "添加奖项";
+        }
+        resetPrizeForm();
+    }
+
+    safeClassListRemove(elements.prizeModal, "hidden");
+}
+
+// 关闭奖项弹窗
+function closePrizeModal() {
+    safeClassListAdd(elements.prizeModal, "hidden");
+    editingPrizeId = null;
+    resetPrizeForm();
+}
+
+// 填充奖项表单
+function fillPrizeForm(prize) {
+    var form = elements.prizeForm;
+    if (!form) return;
+
+    form.prizeName.value = prize.text || "";
+    form.prizeWinnerCount.value = prize.count || 1;
+    form.prizeDescription.value = prize.title || "";
+    form.prizeImage.value = prize.img || "";
+}
+
+// 重置奖项表单
+function resetPrizeForm() {
+    var form = elements.prizeForm;
+    if (!form) return;
+
+    form.prizeName.value = "";
+    form.prizeWinnerCount.value = 1;
+    form.prizeDescription.value = "";
+    form.prizeImage.value = "";
+}
+
+// 保存奖项
+function savePrize() {
+    var form = elements.prizeForm;
+    if (!form) return;
+
+    var name = form.prizeName.value.trim();
+    var count = parseInt(form.prizeWinnerCount.value) || 1;
+    var description = form.prizeDescription.value.trim();
+    var image = form.prizeImage.value.trim();
+
+    if (!name) {
+        alert("请输入奖项名称");
+        return;
+    }
+
+    if (!description) {
+        alert("请输入奖项描述");
+        return;
+    }
+
+    if (count < 1) {
+        alert("中奖人数至少为1");
+        return;
+    }
+
+    // 检查名称是否重复
+    var duplicate = null;
+    for (var i = 0; i < configState.prizes.length; i++) {
+        var p = configState.prizes[i];
+        if (p.text === name && p.id !== editingPrizeId) {
+            duplicate = p;
+            break;
+        }
+    }
+    if (duplicate) {
+        alert("奖项名称已存在，请使用其他名称");
+        return;
+    }
+
+    if (editingPrizeId) {
+        // 编辑现有奖项
+        for (var j = 0; j < configState.prizes.length; j++) {
+            if (configState.prizes[j].id === editingPrizeId) {
+                configState.prizes[j].text = name;
+                configState.prizes[j].count = count;
+                configState.prizes[j].title = description;
+                configState.prizes[j].img = image || "../img/secrit.jpg";
+                break;
+            }
+        }
+    } else {
+        // 添加新奖项
+        var maxType = 0;
+        configState.prizes.forEach(function (p) {
+            if ((p.type || 0) > maxType) maxType = p.type || 0;
+        });
+        configState.prizes.push({
+            id: Date.now(),
+            type: maxType + 1,
+            text: name,
+            count: count,
+            title: description,
+            img: image || "../img/secrit.jpg"
+        });
+    }
+
+    closePrizeModal();
+    renderPrizes();
+}
+
+// 删除奖项
+function deletePrize(id) {
+    showConfirm("确定要删除此奖项吗？", function () {
+        configState.prizes = configState.prizes.filter(function (p) { return p.id !== id; });
+        renderPrizes();
+    });
+}
+
+// 渲染奖项列表
+function renderPrizes() {
+    var count = configState.prizes.length;
+    var totalWinnersCount = 0;
+    configState.prizes.forEach(function (p) {
+        totalWinnersCount += (p.count || 0);
+    });
+
+    if (elements.prizeCount) {
+        elements.prizeCount.textContent = count;
+    }
+    if (elements.totalWinners) {
+        elements.totalWinners.textContent = totalWinnersCount;
+    }
+
+    if (!elements.prizeCards) return;
+
+    if (count === 0) {
+        elements.prizeCards.innerHTML = '<div class="empty-state">暂无奖项，请添加</div>';
+        return;
+    }
+
+    var html = "";
+    configState.prizes.forEach(function (p) {
+        var imgHtml = p.img
+            ? '<img src="' + escapeHtml(p.img) + '" alt="' + escapeHtml(p.text) + '" onerror="this.parentNode.innerHTML=\'🎁\'">'
+            : '<span class="placeholder">🎁</span>';
+
+        html += '<div class="prize-card" draggable="true" data-id="' + p.id + '">' +
+            '<span class="drag-handle">☰</span>' +
+            '<div class="prize-img">' + imgHtml + '</div>' +
+            '<div class="prize-info">' +
+            '<div class="prize-name">' + escapeHtml(p.text) + '</div>' +
+            '<div class="prize-desc">' + escapeHtml(p.title) + '</div>' +
+            '</div>' +
+            '<div class="prize-count">' + p.count + ' 人</div>' +
+            '<div class="prize-actions">' +
+            '<button class="config-btn small" onclick="window.configPage.openPrizeModal(' + p.id + ')">编辑</button>' +
+            '<button class="config-btn small danger" onclick="window.configPage.deletePrize(' + p.id + ')">删除</button>' +
+            '</div>' +
+            '</div>';
+    });
+    elements.prizeCards.innerHTML = html;
+
+    // 绑定拖拽事件
+    initDragAndDrop();
+    updateValidation();
+}
+
+// 拖拽排序
+function initDragAndDrop() {
+    var cards = document.querySelectorAll(".prize-card");
+    var draggedItem = null;
+
+    cards.forEach(function (card) {
+        card.addEventListener("dragstart", function (e) {
+            draggedItem = card;
+            card.classList.add("dragging");
+            e.dataTransfer.effectAllowed = "move";
+        });
+
+        card.addEventListener("dragend", function () {
+            if (draggedItem) {
+                draggedItem.classList.remove("dragging");
+            }
+            draggedItem = null;
+        });
+
+        card.addEventListener("dragover", function (e) {
+            e.preventDefault();
+            e.dataTransfer.dropEffect = "move";
+        });
+
+        card.addEventListener("drop", function (e) {
+            e.preventDefault();
+            if (!draggedItem || draggedItem === card) return;
+
+            var draggedId = parseInt(draggedItem.dataset.id);
+            var targetId = parseInt(card.dataset.id);
+
+            var draggedIndex = -1;
+            var targetIndex = -1;
+            for (var i = 0; i < configState.prizes.length; i++) {
+                if (configState.prizes[i].id === draggedId) draggedIndex = i;
+                if (configState.prizes[i].id === targetId) targetIndex = i;
+            }
+
+            if (draggedIndex === -1 || targetIndex === -1) return;
+
+            // 调换位置
+            var removed = configState.prizes.splice(draggedIndex, 1)[0];
+            configState.prizes.splice(targetIndex, 0, removed);
+
+            renderPrizes();
+        });
+    });
+}
+
+// ============ 音乐管理 ============
+
+function handleMusicUpload(e) {
+    var files = e.target.files;
+    var file = files && files[0];
+    if (!file) return;
+
+    if (!file.type.startsWith("audio/")) {
+        alert("请上传音频文件");
+        return;
+    }
+
+    configState.musicFile = file;
+    configState.musicFileName = file.name;
+    renderMusic();
+}
+
+function removeMusic() {
+    configState.musicFile = null;
+    configState.musicFileName = "";
+    if (elements.musicUpload) {
+        elements.musicUpload.value = "";
+    }
+    renderMusic();
+}
+
+function renderMusic() {
+    if (!elements.musicList) return;
+
+    if (!configState.musicFileName) {
+        elements.musicList.innerHTML = '<div class="config-tip">未上传音乐，将使用系统默认音乐</div>';
+        return;
+    }
+
+    elements.musicList.innerHTML = '<div class="music-item">' +
+        '<span class="music-name">' +
+        '<span class="music-icon">🎵</span>' +
+        escapeHtml(configState.musicFileName) +
+        '</span>' +
+        '<button class="config-btn small danger" onclick="window.configPage.removeMusic()">删除</button>' +
+        '</div>';
+}
+
+// ============ 确认弹窗 ============
+
+var confirmCallback = null;
+
+function showConfirm(message, callback) {
+    if (elements.confirmMessage) {
+        elements.confirmMessage.textContent = message;
+    }
+    confirmCallback = callback;
+    safeClassListRemove(elements.confirmModal, "hidden");
+
+    // 绑定确认按钮
+    if (elements.confirmYesBtn) {
+        elements.confirmYesBtn.onclick = function () {
+            closeConfirm();
+            if (confirmCallback) confirmCallback();
+        };
+    }
+}
+
+function closeConfirm() {
+    safeClassListAdd(elements.confirmModal, "hidden");
+    confirmCallback = null;
+}
+
+// ============ 验证与提交 ============
+
+function updateValidation() {
+    var participantCount = configState.participants.length;
+    var totalWinnersCount = 0;
+    configState.prizes.forEach(function (p) {
+        totalWinnersCount += (p.count || 0);
+    });
+
+    // 检查中奖人数是否超过参与者人数
+    var warningEl = document.getElementById("validationWarning");
+    if (warningEl) {
+        if (totalWinnersCount > participantCount && participantCount > 0) {
+            warningEl.textContent = "⚠️ 中奖总人数(" + totalWinnersCount + ")超过参与者人数(" + participantCount + ")";
+            warningEl.style.display = "block";
+        } else {
+            warningEl.style.display = "none";
+        }
+    }
+}
+
+function validateConfig() {
+    if (configState.participants.length === 0) {
+        alert("请至少添加1名参与者");
+        return false;
+    }
+
+    if (configState.prizes.length === 0) {
+        alert("请至少添加1个奖项");
+        return false;
+    }
+
+    var totalWinnersCount = 0;
+    configState.prizes.forEach(function (p) {
+        totalWinnersCount += (p.count || 0);
+    });
+    if (totalWinnersCount > configState.participants.length) {
+        alert("中奖总人数(" + totalWinnersCount + ")不能超过参与者人数(" + configState.participants.length + ")");
+        return false;
+    }
+
+    return true;
+}
+
+function startLottery() {
+    if (!validateConfig()) return;
+
+    // 保存配置到服务器
+    saveConfigToServer(function () {
+        // 隐藏配置页面
+        safeClassListAdd(elements.configPage, "hidden");
+        // 触发抽奖页面刷新
+        if (window.onConfigComplete) {
+            window.onConfigComplete(configState);
+        }
+    });
+}
+
+function saveConfigToServer(callback) {
+    // 处理参与者数据格式，兼容现有系统
+    var users = configState.participants.map(function (p, index) {
+        return [
+            String(index + 1), // 工号/序号
+            p.name,
+            p.note
+        ];
+    });
+
+    // 处理奖项数据格式
+    var prizes = configState.prizes.map(function (p, index) {
+        return {
+            type: index + 1,
+            count: p.count,
+            text: p.text,
+            title: p.title,
+            img: p.img
+        };
+    });
+
+    // 添加特别奖占位符
+    prizes.unshift({
+        type: 0,
+        count: 1000,
+        title: "",
+        text: "特别奖"
+    });
+
+    var EACH_COUNT = [1];
+    for (var i = 1; i < prizes.length; i++) {
+        EACH_COUNT.push(Math.min(prizes[i].count, 10));
+    }
+
+    window.AJAX({
+        url: "/saveConfig",
+        data: {
+            users: users,
+            prizes: prizes,
+            EACH_COUNT: EACH_COUNT,
+            musicFileName: configState.musicFileName
+        },
+        success: function (data) {
+            if (data.type === "success") {
+                if (callback) callback();
+            } else {
+                alert("保存配置失败，请重试");
+            }
+        },
+        error: function () {
+            alert("保存配置失败，请检查网络连接");
+        }
+    });
+}
+
+// ============ 工具函数 ============
+
+function escapeHtml(text) {
+    if (!text) return "";
+    var div = document.createElement("div");
+    div.textContent = text;
+    return div.innerHTML;
+}
+
+// 显示配置页面
+export function showConfigPage() {
+    safeClassListRemove(elements.configPage, "hidden");
+}
+
+// 隐藏配置页面
+export function hideConfigPage() {
+    safeClassListAdd(elements.configPage, "hidden");
+}
+
+// 获取当前配置
+export function getConfig() {
+    return configState;
+}
+
+// 暴露全局函数供HTML调用
+window.configPage = {
+    editParticipant: editParticipant,
+    deleteParticipant: deleteParticipant,
+    openPrizeModal: openPrizeModal,
+    deletePrize: deletePrize,
+    removeMusic: removeMusic
+};
