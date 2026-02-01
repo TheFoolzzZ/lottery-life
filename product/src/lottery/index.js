@@ -82,6 +82,53 @@ function initAll() {
   window.AJAX({
     url: "/getTempData",
     success(data) {
+      // 防御性初始化，防止后端返回空数据导致崩溃
+      data = data || {};
+      data.cfgData = data.cfgData || {};
+      data.cfgData.prizes = data.cfgData.prizes || [];
+      data.cfgData.EACH_COUNT = data.cfgData.EACH_COUNT || [1];
+      data.cfgData.COMPANY = data.cfgData.COMPANY || "HOBO 2025";
+      data.luckyData = data.luckyData || {};
+      data.leftUsers = data.leftUsers || [];
+
+      // 尝试从 LocalStorage 加载配置（解决 Vercel 无状态问题）
+      try {
+        var raw = localStorage.getItem("lottery_config");
+        if (raw) {
+          var localConfig = JSON.parse(raw);
+          if (localConfig.prizes && localConfig.prizes.length > 0) {
+            console.log("使用本地缓存的奖项配置");
+            // 转换奖项数据
+            var prizes = localConfig.prizes.map(function (p, index) {
+              return {
+                type: index + 1,
+                count: p.count,
+                text: p.text,
+                title: p.title,
+                img: p.img
+              };
+            });
+            // 添加特别奖
+            prizes.unshift({
+              type: 0,
+              count: 1000,
+              title: "",
+              text: "特别奖"
+            });
+            data.cfgData.prizes = prizes;
+
+            // 计算 EACH_COUNT
+            var EACH_COUNT = [1];
+            for (var i = 1; i < prizes.length; i++) {
+              EACH_COUNT.push(Math.min(prizes[i].count, 10));
+            }
+            data.cfgData.EACH_COUNT = EACH_COUNT;
+          }
+        }
+      } catch (e) {
+        console.warn("读取本地配置失败:", e);
+      }
+
       // 获取基础数据
       prizes = data.cfgData.prizes;
       EACH_COUNT = data.cfgData.EACH_COUNT;
@@ -95,6 +142,30 @@ function initAll() {
       // 读取当前已设置的抽奖结果
       basicData.leftUsers = data.leftUsers;
       basicData.luckyUsers = data.luckyData;
+
+      // 如果有本地配置，尝试覆盖 leftUsers
+      try {
+        var raw = localStorage.getItem("lottery_config");
+        if (raw) {
+          var localConfig = JSON.parse(raw);
+          if (localConfig.participants && localConfig.participants.length > 0) {
+            // 转换为数组格式 ["1", "name", "note"]
+            var localUsers = localConfig.participants.map(function (p, index) {
+              return [
+                String(index + 1),
+                p.name,
+                p.note
+              ];
+            });
+            // 这里的逻辑比较简单：如果还没抽过奖（luckyUsers为空），直接覆盖
+            // 如果已经抽过奖，比较麻烦，暂简化处理：重置时会清除 luckyUsers，所以这里优先用本地
+            // 注意：Vercel 环境 luckyData 也会丢失，所以其实每次都是新的
+            if (Object.keys(data.luckyData).length === 0) {
+              basicData.leftUsers = localUsers;
+            }
+          }
+        }
+      } catch (e) { }
 
       let prizeIndex = basicData.prizes.length - 1;
       for (; prizeIndex > -1; prizeIndex--) {
@@ -120,6 +191,24 @@ function initAll() {
     url: "/getUsers",
     success(data) {
       basicData.users = data;
+
+      // 尝试从 LocalStorage 覆盖用户数据
+      try {
+        var raw = localStorage.getItem("lottery_config");
+        if (raw) {
+          var localConfig = JSON.parse(raw);
+          if (localConfig.participants && localConfig.participants.length > 0) {
+            console.log("使用本地缓存的参与者数据");
+            basicData.users = localConfig.participants.map(function (p, index) {
+              return [
+                String(index + 1),
+                p.name,
+                p.note
+              ];
+            });
+          }
+        }
+      } catch (e) { }
 
       initCards();
       // startMaoPao();
@@ -227,8 +316,10 @@ function bindEvent() {
     // 如果正在抽奖，则禁止一切操作
     if (isLotting) {
       if (e.target.id === "lottery") {
-        rotateObj.stop();
-        btns.lottery.innerHTML = "开始抽奖";
+        if (rotateObj) {
+          rotateObj.stop();
+          btns.lottery.innerHTML = "开始抽奖";
+        }
       } else {
         addQipao("正在抽奖，抽慢一点点～～");
       }
@@ -627,20 +718,18 @@ function resetCard(duration = 500) {
  * 抽奖
  */
 function lottery() {
-  // if (isLotting) {
-  //   rotateObj.stop();
-  //   btns.lottery.innerHTML = "开始抽奖";
-  //   return;
-  // }
   btns.lottery.innerHTML = "结束抽奖";
   rotateBall().then(() => {
     // 将之前的记录置空
     currentLuckys = [];
     selectedCardIndex = [];
     // 当前同时抽取的数目,当前奖品抽完还可以继续抽，但是不记录数据
-    let perCount = EACH_COUNT[currentPrizeIndex],
-      luckyData = basicData.luckyUsers[currentPrize.type],
-      leftCount = basicData.leftUsers.length,
+    let perCount = EACH_COUNT[currentPrizeIndex];
+    // 防御性获取 luckyData
+    let luckysObj = basicData.luckyUsers || {};
+    let luckyData = luckysObj[currentPrize.type];
+
+    let leftCount = basicData.leftUsers.length,
       leftPrizeCount = currentPrize.count - (luckyData ? luckyData.length : 0);
 
     if (leftCount < perCount) {
@@ -681,10 +770,14 @@ function saveData() {
   }
 
   let type = currentPrize.type,
-    curLucky = basicData.luckyUsers[type] || [];
+    // 防御性获取
+    luckysObj = basicData.luckyUsers || {},
+    curLucky = luckysObj[type] || [];
 
   curLucky = curLucky.concat(currentLuckys);
 
+  // 确保对象存在
+  if (!basicData.luckyUsers) basicData.luckyUsers = {};
   basicData.luckyUsers[type] = curLucky;
 
   if (currentPrize.count <= curLucky.length) {
@@ -703,7 +796,8 @@ function saveData() {
 }
 
 function changePrize() {
-  let luckys = basicData.luckyUsers[currentPrize.type];
+  let luckysObj = basicData.luckyUsers || {};
+  let luckys = luckysObj[currentPrize.type];
   let luckyCount = (luckys ? luckys.length : 0) + EACH_COUNT[currentPrizeIndex];
   // 修改左侧prize的数目和百分比
   setPrizeData(currentPrizeIndex, luckyCount);

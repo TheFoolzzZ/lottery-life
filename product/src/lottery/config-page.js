@@ -133,8 +133,39 @@ function switchTab(tab) {
     }
 }
 
+// 保存到本地存储与后端
+function saveToLocalStorage() {
+    try {
+        localStorage.setItem("lottery_config", JSON.stringify(configState));
+    } catch (e) {
+        console.warn("Local storage error:", e);
+    }
+}
+
 // 加载现有配置
 function loadExistingConfig() {
+    // 优先从本地存储加载，解决 Vercel 无状态问题
+    var localData = null;
+    try {
+        var raw = localStorage.getItem("lottery_config");
+        if (raw) localData = JSON.parse(raw);
+    } catch (e) {
+        console.warn("Local storage parse error:", e);
+    }
+
+    if (localData) {
+        console.log("加载本地缓存配置");
+        if (localData.participants) configState.participants = localData.participants;
+        if (localData.prizes) configState.prizes = localData.prizes;
+        if (localData.musicFileName) configState.musicFileName = localData.musicFileName;
+
+        renderParticipants();
+        renderPrizes();
+        renderMusic();
+        return;
+    }
+
+    // 如果没有本地数据，再请求后端
     window.AJAX({
         url: "/getConfig",
         success: function (data) {
@@ -152,7 +183,6 @@ function loadExistingConfig() {
             renderMusic();
         },
         error: function () {
-            // 使用默认配置
             renderParticipants();
             renderPrizes();
             renderMusic();
@@ -180,9 +210,10 @@ function addParticipant() {
 
     if (elements.participantName) elements.participantName.value = "";
     if (elements.participantNote) elements.participantNote.value = "";
-    if (elements.participantName) elements.participantName.focus();
+    if ((elements.participantName)) elements.participantName.focus();
 
     renderParticipants();
+    saveToLocalStorage(); // 实时保存
     checkDuplicateNames();
 }
 
@@ -219,6 +250,7 @@ function parseText() {
     if (addedCount > 0) {
         if (elements.pasteTextarea) elements.pasteTextarea.value = "";
         renderParticipants();
+        saveToLocalStorage(); // 实时保存
         checkDuplicateNames();
         alert("成功添加 " + addedCount + " 名参与者");
     } else {
@@ -269,12 +301,33 @@ function editParticipant(id) {
     participant.note = (newNote && newNote.trim()) ? newNote.trim() : "-";
 
     renderParticipants();
+    saveToLocalStorage(); // 实时保存
 }
 
 // 删除参与者
 function deleteParticipant(id) {
-    configState.participants = configState.participants.filter(function (p) { return p.id !== id; });
+    console.log("尝试删除参与者 ID:", id);
+    var targetId = Number(id);
+    var beforeCount = configState.participants.length;
+    configState.participants = configState.participants.filter(function (p) { return Number(p.id) !== targetId; });
+    console.log("删除后剩余:", configState.participants.length);
+
+    if (configState.participants.length === beforeCount) {
+        console.warn("删除失败：未找到匹配 ID");
+    } else {
+        saveToLocalStorage(); // 实时保存
+    }
     renderParticipants();
+}
+
+// 清空所有参与者
+function clearAllParticipants() {
+    showConfirm("确定要清空所有参与者吗？此操作不可恢复。", function () {
+        console.log("执行清空所有参与者");
+        configState.participants = [];
+        saveToLocalStorage(); // 实时保存
+        renderParticipants();
+    });
 }
 
 // 渲染参与者列表
@@ -436,13 +489,24 @@ function savePrize() {
     }
 
     closePrizeModal();
+    saveToLocalStorage(); // 实时保存
     renderPrizes();
 }
 
 // 删除奖项
 function deletePrize(id) {
+    console.log("尝试删除奖项 ID:", id);
+    var targetId = Number(id);
     showConfirm("确定要删除此奖项吗？", function () {
-        configState.prizes = configState.prizes.filter(function (p) { return p.id !== id; });
+        console.log("确认删除奖项:", targetId);
+        var beforeCount = configState.prizes.length;
+        configState.prizes = configState.prizes.filter(function (p) { return Number(p.id) !== targetId; });
+
+        if (configState.prizes.length === beforeCount) {
+            console.warn("删除/过滤奖项失败，可能是 ID 不匹配");
+        } else {
+            saveToLocalStorage(); // 实时保存
+        }
         renderPrizes();
     });
 }
@@ -599,12 +663,28 @@ function showConfirm(message, callback) {
     confirmCallback = callback;
     safeClassListRemove(elements.confirmModal, "hidden");
 
-    // 绑定确认按钮
-    if (elements.confirmYesBtn) {
-        elements.confirmYesBtn.onclick = function () {
+    // 重新获取按钮以防引用丢失
+    var yesBtn = document.getElementById("confirmYesBtn");
+    if (yesBtn) {
+        console.log("绑定确认按钮点击事件");
+        yesBtn.onclick = function (e) {
+            console.log("确认按钮被点击");
+            e.preventDefault();
+            e.stopPropagation();
+
+            // 先保存回调引用，因为 closeConfirm 会清空 confirmCallback
+            var callbackToRun = confirmCallback;
             closeConfirm();
-            if (confirmCallback) confirmCallback();
+
+            if (callbackToRun) {
+                console.log("执行确认回调");
+                callbackToRun();
+            } else {
+                console.warn("无确认回调 (已被清空或未设置)");
+            }
         };
+    } else {
+        console.error("未找到确认按钮 confirmYesBtn");
     }
 }
 
@@ -685,7 +765,7 @@ function saveConfigToServer(callback) {
     var prizes = configState.prizes.map(function (p, index) {
         return {
             type: index + 1,
-            count: p.count,
+            count: Number(p.count),
             text: p.text,
             title: p.title,
             img: p.img
@@ -714,14 +794,15 @@ function saveConfigToServer(callback) {
             musicFileName: configState.musicFileName
         },
         success: function (data) {
-            if (data.type === "success") {
-                if (callback) callback();
-            } else {
-                alert("保存配置失败，请重试");
-            }
+            // 保存成功后同时也存一份到 LocalStorage
+            saveToLocalStorage();
+            if (callback) callback();
         },
         error: function () {
-            alert("保存配置失败，请检查网络连接");
+            // 网络错误时，保存到本地并允许继续
+            saveToLocalStorage();
+            console.log("网络连接异常，已保存配置到本地浏览器");
+            if (callback) callback();
         }
     });
 }
@@ -756,5 +837,6 @@ window.configPage = {
     deleteParticipant: deleteParticipant,
     openPrizeModal: openPrizeModal,
     deletePrize: deletePrize,
-    removeMusic: removeMusic
+    removeMusic: removeMusic,
+    clearAllParticipants: clearAllParticipants
 };

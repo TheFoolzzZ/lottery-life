@@ -42,7 +42,11 @@ if (process.argv.length > 2) {
   port = process.argv[2];
 }
 
-app.use(express.static(cwd));
+app.use(express.static(cwd, {
+  setHeaders: (res, path, stat) => {
+    res.set('Cache-Control', 'no-cache, no-store, must-revalidate');
+  }
+}));
 
 //请求地址为空，默认重定向到index.html文件
 app.get("/", (req, res) => {
