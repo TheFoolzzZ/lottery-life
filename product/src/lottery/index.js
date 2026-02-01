@@ -99,7 +99,7 @@ function initAll() {
           if (localConfig.prizes && localConfig.prizes.length > 0) {
             console.log("使用本地缓存的奖项配置");
             // 转换奖项数据
-            var prizes = localConfig.prizes.map(function (p, index) {
+            let localPrizes = localConfig.prizes.map(function (p, index) {
               return {
                 type: index + 1,
                 count: p.count,
@@ -109,20 +109,20 @@ function initAll() {
               };
             });
             // 添加特别奖
-            prizes.unshift({
+            localPrizes.unshift({
               type: 0,
               count: 1000,
               title: "",
               text: "特别奖"
             });
-            data.cfgData.prizes = prizes;
+            data.cfgData.prizes = localPrizes;
 
             // 计算 EACH_COUNT
-            var EACH_COUNT = [1];
-            for (var i = 1; i < prizes.length; i++) {
-              EACH_COUNT.push(Math.min(prizes[i].count, 10));
+            let localEachCount = [1];
+            for (var i = 1; i < localPrizes.length; i++) {
+              localEachCount.push(Math.min(localPrizes[i].count, 10));
             }
-            data.cfgData.EACH_COUNT = EACH_COUNT;
+            data.cfgData.EACH_COUNT = localEachCount;
           }
         }
       } catch (e) {
@@ -131,6 +131,7 @@ function initAll() {
 
       // 获取基础数据
       prizes = data.cfgData.prizes;
+      console.log("Global prizes updated:", prizes);
       EACH_COUNT = data.cfgData.EACH_COUNT;
       COMPANY = data.cfgData.COMPANY;
       HIGHLIGHT_CELL = createHighlight();

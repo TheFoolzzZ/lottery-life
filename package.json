@@ -1,0 +1,11 @@
+{
+    "name": "lottery-life",
+    "version": "1.0.0",
+    "description": "Root package for lottery-life",
+    "scripts": {
+        "build": "cd product && npm install && npm run build",
+        "start": "cd product && npm start",
+        "dev": "cd product && npm run dev"
+    },
+    "dependencies": {}
+}
