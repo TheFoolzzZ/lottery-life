@@ -1,0 +1,37 @@
+{
+    "version": 2,
+    "buildCommand": "cd product && npm install && NODE_OPTIONS=--openssl-legacy-provider npm run build",
+    "outputDirectory": "product/dist",
+    "rewrites": [
+        {
+            "source": "/getTempData",
+            "destination": "/api/getTempData"
+        },
+        {
+            "source": "/getUsers",
+            "destination": "/api/getUsers"
+        },
+        {
+            "source": "/saveConfig",
+            "destination": "/api/config"
+        },
+        {
+            "source": "/getConfig",
+            "destination": "/api/config"
+        },
+        {
+            "source": "/saveData",
+            "destination": "/api/saveData"
+        },
+        {
+            "source": "/reset",
+            "destination": "/api/reset"
+        }
+    ],
+    "functions": {
+        "api/*.js": {
+            "memory": 256,
+            "maxDuration": 10
+        }
+    }
+}
