@@ -16,7 +16,6 @@ window.AJAX = function (opt) {
     }
 
     xhr.onreadystatechange = function () {
-        // try {
         if (xhr.readyState === 4) {
             if (xhr.status === 200) {
                 let res = xhr.responseText;
@@ -24,12 +23,14 @@ window.AJAX = function (opt) {
                 opt.success && opt.success(res);
             } else {
                 console.log('There was a problem with the request.');
+                opt.error && opt.error(xhr);
             }
         }
-        // } catch (e) {
-        //     console.error('Caught Exception: ' + e);
-        // }
     }
+    xhr.onerror = function () {
+        console.log('There was a problem with the request.');
+        opt.error && opt.error(xhr);
+    };
     xhr.open(opt.type, opt.url, opt.async);
     xhr.setRequestHeader('Content-Type', 'application/json');
     xhr.send(data);

@@ -60,6 +60,8 @@ let selectedCardIndex = [],
 
 // 初始化配置页面
 initConfigPage();
+// 页面加载时尝试初始化（已有配置时直接进入抽奖）
+initAll();
 
 // 配置完成后的回调
 window.onConfigComplete = function (configData) {
@@ -79,9 +81,7 @@ if (backToConfigBtn) {
  * 初始化所有DOM
  */
 function initAll() {
-  window.AJAX({
-    url: "/getTempData",
-    success(data) {
+  function handleTempData(data) {
       // 防御性初始化，防止后端返回空数据导致崩溃
       data = data || {};
       data.cfgData = data.cfgData || {};
@@ -185,12 +185,22 @@ function initAll() {
       showPrizeList(currentPrizeIndex);
       let curLucks = basicData.luckyUsers[currentPrize.type];
       setPrizeData(currentPrizeIndex, curLucks ? curLucks.length : 0, true);
+  }
+
+  window.AJAX({
+    url: "/getTempData",
+    success: handleTempData,
+    error: function () {
+      // 后端不可用时，使用最小数据继续流程
+      handleTempData({
+        cfgData: { prizes: [], EACH_COUNT: [1], COMPANY: "HOBO 2025" },
+        luckyData: {},
+        leftUsers: []
+      });
     }
   });
 
-  window.AJAX({
-    url: "/getUsers",
-    success(data) {
+  function handleUsers(data) {
       basicData.users = data;
 
       // 尝试从 LocalStorage 覆盖用户数据
@@ -211,6 +221,11 @@ function initAll() {
         }
       } catch (e) { }
 
+      if (basicData.users.length === 0) {
+        showConfigPage();
+        return;
+      }
+
       initCards();
       // startMaoPao();
       animate();
@@ -218,17 +233,39 @@ function initAll() {
 
       // 如果有参与者数据，隐藏配置页面进入抽奖
       console.log("Check users length:", basicData.users.length);
-      if (basicData.users.length > 0) {
-        console.log("Attempting to hide config page...");
-        hideConfigPage();
-        let cp = document.getElementById("configPage");
-        if (cp) {
-          cp.classList.add("hidden");
-          console.log("Forced .hidden class on configPage", cp);
-        } else {
-          console.error("Could not find configPage element!");
-        }
+      console.log("Attempting to hide config page...");
+      hideConfigPage();
+      let cp = document.getElementById("configPage");
+      if (cp) {
+        cp.classList.add("hidden");
+        console.log("Forced .hidden class on configPage", cp);
+      } else {
+        console.error("Could not find configPage element!");
       }
+  }
+
+  window.AJAX({
+    url: "/getUsers",
+    success: handleUsers,
+    error: function () {
+      // 后端不可用时尝试用本地缓存
+      var localUsers = [];
+      try {
+        var raw = localStorage.getItem("lottery_config");
+        if (raw) {
+          var localConfig = JSON.parse(raw);
+          if (localConfig.participants && localConfig.participants.length > 0) {
+            localUsers = localConfig.participants.map(function (p, index) {
+              return [
+                String(index + 1),
+                p.name,
+                p.note
+              ];
+            });
+          }
+        }
+      } catch (e) { }
+      handleUsers(localUsers);
     }
   });
 }
