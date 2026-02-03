@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
   <head>
-    <title>年会抽奖</title>
+    <title>活动抽奖</title>
     <meta charset="utf-8" />
     <meta
       name="viewport"
@@ -16,6 +16,7 @@
     <script src="./lib/TrackballControls.js"></script>
     <script src="./lib/CSS3DRenderer.js"></script>
     <script src="./lib/ajax.js"></script>
+    <script src="./lottery/cloudinary-config.js"></script>
 
     <!-- ========== 配置页面 ========== -->
     <div id="configPage">
@@ -206,12 +207,23 @@
               />
             </div>
             <div class="form-group">
-              <label class="form-label">奖项配图地址</label>
+              <label class="form-label">奖项封面</label>
+              <div class="image-upload">
+                <div class="file-upload">
+                  <button class="config-btn">📷 上传封面</button>
+                  <input type="file" id="prizeImageUpload" accept="image/*" />
+                </div>
+                <span id="prizeImageStatus" class="upload-status">未上传</span>
+              </div>
+              <div id="prizeImagePreview" class="image-preview">未选择图片</div>
+            </div>
+            <div class="form-group">
+              <label class="form-label">奖项配图链接</label>
               <input
                 type="text"
                 name="prizeImage"
                 class="config-input"
-                placeholder="图片URL（选填，不填使用默认图标）"
+                placeholder="粘贴图片URL（选填，不填使用默认图标）"
                 style="width: 100%; box-sizing: border-box"
               />
             </div>
@@ -270,4 +282,3 @@
     <div class="qipao-container"></div>
   </body>
 </html>
-

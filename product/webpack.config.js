@@ -69,6 +69,10 @@ module.exports = {
       {
         from: "./src/lib",
         to: "./lib"
+      },
+      {
+        from: "./src/lottery/cloudinary-config.js",
+        to: "./lottery/cloudinary-config.js"
       }
     ])
   ]

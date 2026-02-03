@@ -46,6 +46,10 @@ function cacheElements() {
         closePrizeModal: document.getElementById("closePrizeModal"),
         cancelPrizeBtn: document.getElementById("cancelPrizeBtn"),
         savePrizeBtn: document.getElementById("savePrizeBtn"),
+        prizeImageUpload: document.getElementById("prizeImageUpload"),
+        prizeImageStatus: document.getElementById("prizeImageStatus"),
+        prizeImagePreview: document.getElementById("prizeImagePreview"),
+        prizeImageInput: document.querySelector('input[name="prizeImage"]'),
         // 确认弹窗
         confirmModal: document.getElementById("confirmModal"),
         confirmMessage: document.getElementById("confirmMessage"),
@@ -89,6 +93,11 @@ function bindEvents() {
     safeAddEventListener(elements.closePrizeModal, "click", closePrizeModal);
     safeAddEventListener(elements.cancelPrizeBtn, "click", closePrizeModal);
     safeAddEventListener(elements.savePrizeBtn, "click", savePrize);
+    safeAddEventListener(elements.prizeImageUpload, "change", handlePrizeImageUpload);
+    safeAddEventListener(elements.prizeImageInput, "change", function () {
+        setPrizeImagePreview(elements.prizeImageInput.value.trim());
+        setPrizeImageStatus(elements.prizeImageInput.value.trim() ? "已使用链接" : "未上传");
+    });
 
     // 确认弹窗
     safeAddEventListener(elements.confirmNoBtn, "click", closeConfirm);
@@ -409,6 +418,8 @@ function fillPrizeForm(prize) {
     form.prizeWinnerCount.value = prize.count || 1;
     form.prizeDescription.value = prize.title || "";
     form.prizeImage.value = prize.img || "";
+    setPrizeImagePreview(prize.img || "");
+    setPrizeImageStatus(prize.img ? "已加载" : "未上传");
 }
 
 // 重置奖项表单
@@ -420,6 +431,7 @@ function resetPrizeForm() {
     form.prizeWinnerCount.value = 1;
     form.prizeDescription.value = "";
     form.prizeImage.value = "";
+    resetPrizeImageUpload();
 }
 
 // 保存奖项
@@ -491,6 +503,85 @@ function savePrize() {
     closePrizeModal();
     saveToLocalStorage(); // 实时保存
     renderPrizes();
+}
+
+function getCloudinaryConfig() {
+    return window.CLOUDINARY_CONFIG || null;
+}
+
+function setPrizeImageStatus(text) {
+    if (elements.prizeImageStatus) {
+        elements.prizeImageStatus.textContent = text || "未上传";
+    }
+}
+
+function setPrizeImagePreview(url) {
+    if (!elements.prizeImagePreview) return;
+    if (!url) {
+        elements.prizeImagePreview.textContent = "未选择图片";
+        return;
+    }
+    elements.prizeImagePreview.innerHTML =
+        '<img src="' +
+        escapeHtml(url) +
+        '" alt="奖项封面" onerror="this.parentNode.textContent=\'图片加载失败\'">';
+}
+
+function resetPrizeImageUpload() {
+    if (elements.prizeImageUpload) {
+        elements.prizeImageUpload.value = "";
+    }
+    setPrizeImagePreview("");
+    setPrizeImageStatus("未上传");
+}
+
+function handlePrizeImageUpload(e) {
+    var files = e.target.files;
+    var file = files && files[0];
+    if (!file) return;
+
+    if (!file.type.startsWith("image/")) {
+        alert("请上传图片文件");
+        resetPrizeImageUpload();
+        return;
+    }
+
+    var config = getCloudinaryConfig();
+    if (!config || !config.cloudName || !config.uploadPreset) {
+        alert("未配置图床，请改为粘贴图片链接");
+        resetPrizeImageUpload();
+        return;
+    }
+
+    setPrizeImageStatus("上传中...");
+    setPrizeImagePreview(URL.createObjectURL(file));
+
+    var formData = new FormData();
+    formData.append("file", file);
+    formData.append("upload_preset", config.uploadPreset);
+    if (config.folder) {
+        formData.append("folder", config.folder);
+    }
+
+    fetch("https://api.cloudinary.com/v1_1/" + config.cloudName + "/image/upload", {
+        method: "POST",
+        body: formData
+    })
+        .then(function (res) { return res.json(); })
+        .then(function (data) {
+            if (!data || !data.secure_url) {
+                throw new Error("upload failed");
+            }
+            if (elements.prizeImageInput) {
+                elements.prizeImageInput.value = data.secure_url;
+            }
+            setPrizeImagePreview(data.secure_url);
+            setPrizeImageStatus("上传成功");
+        })
+        .catch(function () {
+            setPrizeImageStatus("上传失败");
+            alert("封面上传失败，请改为粘贴图片链接");
+        });
 }
 
 // 删除奖项
